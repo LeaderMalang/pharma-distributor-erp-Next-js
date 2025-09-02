@@ -1,11 +1,14 @@
+
 import React, { useState, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { SALES_BY_CATEGORY, EXPENSE_BREAKDOWN, ICONS } from '../constants';
+import { useToast } from '../contexts/ToastContext';
 
 const ReportsPage: React.FC = () => {
     const [analysis, setAnalysis] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
+    const { addToast } = useToast();
 
     const handleGenerateAnalysis = useCallback(async () => {
         setIsLoading(true);
@@ -28,12 +31,15 @@ const ReportsPage: React.FC = () => {
             
             const result = await response.json();
             setAnalysis(result.analysis);
+            addToast('AI analysis generated successfully!', 'success');
         } catch (err: any) {
-            setError(err.message || 'An unknown error occurred.');
+            const errorMessage = err.message || 'An unknown error occurred.';
+            setError(errorMessage);
+            addToast(errorMessage, 'error');
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [addToast]);
 
     return (
         <div className="space-y-8">

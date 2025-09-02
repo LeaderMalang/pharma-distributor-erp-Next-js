@@ -1,11 +1,14 @@
+
 import EcommerceOrdersComponent from '../components/EcommerceOrders';
 import { useRouter } from 'next/router';
 import { Order, EcommerceOrder, Page, EcommerceOrderStatus } from '../types';
 import { useEffect, useState } from 'react';
 import { fetchEcommerceOrders, updateEcommerceOrderStatus } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 
 const EcommerceOrdersPage = () => {
     const router = useRouter();
+    const { addToast } = useToast();
     const [orders, setOrders] = useState<EcommerceOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -25,13 +28,14 @@ const EcommerceOrdersPage = () => {
                 setError(null);
             } catch (err: any) {
                 setError(err.message || 'Failed to load orders.');
+                addToast(err.message || 'Failed to load orders.', 'error');
                 console.error(err);
             } finally {
                 setIsLoading(false);
             }
         };
         loadOrders();
-    }, [currentPage]);
+    }, [currentPage, addToast]);
 
     const handleEditSaleInvoice = (invoice: Order) => {
         sessionStorage.setItem('invoice-to-create', JSON.stringify(invoice));
@@ -62,10 +66,11 @@ const EcommerceOrdersPage = () => {
             setOrders(prevOrders => prevOrders.map(order =>
                 order.id === updatedOrderFromServer.id ? updatedOrderFromServer : order
             ));
+            addToast(`Order ${updatedOrderFromServer.orderNo} status updated to ${newStatus}.`, 'success');
         } catch (error: any) {
             console.error('Failed to update status:', error);
             setOrders(originalOrders);
-            alert(`Error: ${error.message}`);
+            addToast(`Error: ${error.message}`, 'error');
         }
     };
 
@@ -73,7 +78,7 @@ const EcommerceOrdersPage = () => {
         return <div className="flex h-screen items-center justify-center">Loading Ecommerce Orders...</div>;
     }
 
-    if (error) {
+    if (error && orders.length === 0) {
         return <div className="flex h-screen items-center justify-center text-red-500">{error}</div>;
     }
 

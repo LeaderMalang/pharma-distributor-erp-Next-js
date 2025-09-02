@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Order, InvoiceItem, Party, Area, PriceListItem, Task } from '../types';
 import { PRODUCTS, BATCHES, ICONS, CITIES, AREAS, EMPLOYEES, COMPANIES, PARTIES_DATA, PRICE_LISTS, PRICE_LIST_ITEMS } from '../constants';
 import SearchableSelect from './SearchableSelect';
 import { addToSyncQueue, registerSync } from '../services/db';
+import { useToast } from '../contexts/ToastContext';
 
 interface SaleInvoiceProps {
   invoiceToEdit: Order | null;
@@ -27,6 +29,7 @@ const FormSelect: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({ c
 );
 
 const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose }) => {
+  const { addToast } = useToast();
   const [invoice, setInvoice] = useState<Omit<Order, 'customer'>>({
     id: new Date().getTime().toString(),
     invoiceNo: `INV-${Math.floor(Math.random() * 10000)}`,
@@ -224,7 +227,7 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
 
   const handleSave = async () => {
     if (!customerId) {
-        alert("Please select a customer.");
+        addToast("Please select a customer.", 'error');
         return;
     }
 
@@ -239,19 +242,24 @@ const SaleInvoice: React.FC<SaleInvoiceProps> = ({ invoiceToEdit, handleClose })
 
     const endpoint = isEditMode ? `/api/orders/${finalInvoice.id}` : '/api/orders';
     const method = isEditMode ? 'PUT' : 'POST';
-
-    await addToSyncQueue({ endpoint, method, payload });
     
-    if (createTask && taskDetails.title && taskDetails.assignedTo && taskDetails.dueDate) {
-        const finalTask = {
-            ...taskDetails,
-            relatedTo: { type: 'SaleInvoice', id: finalInvoice.id, name: finalInvoice.invoiceNo }
-        }
-        await addToSyncQueue({ endpoint: '/api/tasks', method: 'POST', payload: finalTask });
-    }
+    try {
+      await addToSyncQueue({ endpoint, method, payload });
+      
+      if (createTask && taskDetails.title && taskDetails.assignedTo && taskDetails.dueDate) {
+          const finalTask = {
+              ...taskDetails,
+              relatedTo: { type: 'SaleInvoice', id: finalInvoice.id, name: finalInvoice.invoiceNo }
+          }
+          await addToSyncQueue({ endpoint: '/api/tasks', method: 'POST', payload: finalTask });
+      }
 
-    await registerSync();
-    handleClose();
+      await registerSync();
+      addToast('Invoice saved locally. It will sync when online.', 'success');
+      handleClose();
+    } catch (error: any) {
+        addToast(error.message, 'error');
+    }
   };
 
   const availableBatches = useMemo(() => {

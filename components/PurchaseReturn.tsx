@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { PurchaseReturn, PurchaseReturnItem } from '../types';
 import { SUPPLIERS, PRODUCTS, ICONS } from '../constants';
 import SearchableSelect from './SearchableSelect';
 import { addToSyncQueue, registerSync } from '../services/db';
+import { useToast } from '../contexts/ToastContext';
 
 interface PurchaseReturnProps {
   returnToEdit: PurchaseReturn | null;
@@ -14,6 +16,7 @@ const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({...pr
 );
 
 const PurchaseReturnForm: React.FC<PurchaseReturnProps> = ({ returnToEdit, handleClose }) => {
+  const { addToast } = useToast();
   const [pReturn, setPReturn] = useState<Omit<PurchaseReturn, 'supplier' | 'id'>>({
     returnNo: `PRN-${Math.floor(Math.random() * 10000)}`,
     status: 'Draft',
@@ -70,10 +73,15 @@ const PurchaseReturnForm: React.FC<PurchaseReturnProps> = ({ returnToEdit, handl
 
     const endpoint = isEditMode ? `/api/purchase-returns/${finalReturn.id}` : '/api/purchase-returns';
     const method = isEditMode ? 'PUT' : 'POST';
-
-    await addToSyncQueue({ endpoint, method, payload: finalReturn });
-    await registerSync();
-    handleClose();
+    
+    try {
+      await addToSyncQueue({ endpoint, method, payload: finalReturn });
+      await registerSync();
+      addToast('Purchase return saved. It will sync when online.', 'success');
+      handleClose();
+    } catch (error: any) {
+      addToast(error.message, 'error');
+    }
   };
   
   return (

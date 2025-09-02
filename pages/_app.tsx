@@ -1,6 +1,8 @@
+
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { ToastProvider } from '../contexts/ToastContext';
 import Layout from '../components/Layout';
 import { NextRouter } from 'next/router';
 import { useEffect } from 'react';
@@ -49,7 +51,9 @@ function AppContent({ Component, pageProps, router }: AppProps) {
 export default function MyApp(props: AppProps) {
   return (
     <AuthProvider>
-      <AppContent {...props} />
+      <ToastProvider>
+        <AppContent {...props} />
+      </ToastProvider>
     </AuthProvider>
   );
 }

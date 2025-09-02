@@ -1,8 +1,11 @@
+
 import React, { useState } from 'react';
 import { Page, Party } from '../types';
 import { addToSyncQueue, registerSync } from '../services/db';
+import { useToast } from '../contexts/ToastContext';
 
 const CustomerRegistration: React.FC<{ setCurrentPage: (page: Page) => void; }> = ({ setCurrentPage }) => {
+    const { addToast } = useToast();
     const [formData, setFormData] = useState<Partial<Party>>({ partyType: 'customer', name: '', proprietor: '', address: '', phone: '', licenseNo: '', licenseExpiry: '', category: '', latitude: null, longitude: null, });
     const [error, setError] = useState('');
 
@@ -11,10 +14,15 @@ const CustomerRegistration: React.FC<{ setCurrentPage: (page: Page) => void; }> 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        await addToSyncQueue({ endpoint: '/api/auth/register', method: 'POST', payload: formData });
-        await registerSync();
-        alert('Registration data saved! It will be submitted when you are online. Please ask an admin to activate your account later.');
-        setCurrentPage('login');
+        try {
+            await addToSyncQueue({ endpoint: '/api/auth/register', method: 'POST', payload: formData });
+            await registerSync();
+            addToast('Registration data saved! It will be submitted when you are online.', 'success');
+            setCurrentPage('login');
+        } catch (error: any) {
+            addToast(error.message, 'error');
+            setError(error.message);
+        }
     };
     
     // ... (rest of the component with beautified form)

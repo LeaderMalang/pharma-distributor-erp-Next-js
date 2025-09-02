@@ -1,8 +1,10 @@
 
+
 import React, { useState } from 'react';
 import { Page, Order, OrderStatus } from '../types';
 import { ICONS, ORDERS } from '../constants';
 import { SearchInput } from './SearchInput';
+import { useToast } from '../contexts/ToastContext';
 
 interface WarehouseAdminDashboardProps {
   setCurrentPage: (page: Page) => void;
@@ -26,13 +28,14 @@ const StatusBadge: React.FC<{ status: OrderStatus }> = ({ status }) => {
 
 const WarehouseAdminDashboard: React.FC<WarehouseAdminDashboardProps> = ({ setCurrentPage, viewOrderDetails }) => {
     const [qrCode, setQrCode] = useState('');
+    const { addToast } = useToast();
 
     const handleQrScan = () => {
         const order = ORDERS.find(o => o.qrCode === qrCode);
         if (order) {
             viewOrderDetails(order);
         } else {
-            alert('Order not found for the provided QR Code.');
+            addToast('Order not found for the provided QR Code.', 'error');
         }
     };
 

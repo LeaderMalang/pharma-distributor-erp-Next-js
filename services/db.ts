@@ -1,3 +1,4 @@
+
 import { SyncQueueItem } from '../types';
 
 const DB_NAME = 'PharmaERP-DB';
@@ -51,13 +52,12 @@ export async function registerSync(): Promise<void> {
             const swRegistration = await navigator.serviceWorker.ready;
             await (swRegistration as any).sync.register('sync-forms');
             console.log('Background sync registered');
-            alert('Data saved locally. It will be synced with the server when you are online.');
         } catch (error) {
             console.error('Background sync registration failed:', error);
-            alert('Failed to schedule data sync. Please try again when you are online.');
+            throw new Error('Failed to schedule data sync.');
         }
     } else {
-        alert('Your browser does not support offline capabilities. Data could not be saved.');
         console.warn('Background sync not supported.');
+        throw new Error('Background sync not supported by your browser.');
     }
 }

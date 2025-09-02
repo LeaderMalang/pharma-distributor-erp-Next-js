@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { SaleReturn, SaleReturnItem } from '../types';
 import { PARTIES_DATA, PRODUCTS, ICONS } from '../constants';
 import SearchableSelect from './SearchableSelect';
 import { addToSyncQueue, registerSync } from '../services/db';
+import { useToast } from '../contexts/ToastContext';
 
 interface SaleReturnProps {
   returnToEdit: SaleReturn | null;
@@ -14,6 +16,7 @@ const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({...pr
 );
 
 const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }) => {
+  const { addToast } = useToast();
   const [sReturn, setSReturn] = useState<Omit<SaleReturn, 'customer' | 'id'>>({
     returnNo: `SRN-${Math.floor(Math.random() * 10000)}`,
     status: 'Draft',
@@ -71,9 +74,14 @@ const SaleReturnForm: React.FC<SaleReturnProps> = ({ returnToEdit, handleClose }
     const endpoint = isEditMode ? `/api/sale-returns/${finalReturn.id}` : '/api/sale-returns';
     const method = isEditMode ? 'PUT' : 'POST';
     
-    await addToSyncQueue({ endpoint, method, payload: finalReturn });
-    await registerSync();
-    handleClose();
+    try {
+      await addToSyncQueue({ endpoint, method, payload: finalReturn });
+      await registerSync();
+      addToast('Sale return saved. It will sync when online.', 'success');
+      handleClose();
+    } catch (error: any) {
+      addToast(error.message, 'error');
+    }
   };
   
   return (

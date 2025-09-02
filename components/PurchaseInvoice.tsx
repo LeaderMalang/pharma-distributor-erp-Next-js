@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { PurchaseInvoice, PurchaseInvoiceItem, Task, InvoiceStatus } from '../types';
 import { SUPPLIERS, PRODUCTS, EMPLOYEES, PARTIES_DATA } from '../constants';
 import { ICONS } from '../constants';
 import SearchableSelect from './SearchableSelect';
 import { addToSyncQueue, registerSync } from '../services/db';
+import { useToast } from '../contexts/ToastContext';
 
 interface PurchaseInvoiceProps {
   invoiceToEdit: PurchaseInvoice | null;
@@ -28,6 +30,7 @@ const FormSelect: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = ({ c
 );
 
 const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, handleClose }) => {
+  const { addToast } = useToast();
   const [invoice, setInvoice] = useState<Omit<PurchaseInvoice, 'supplier' | 'id'>>({
     invoiceNo: '',
     status: 'Pending',
@@ -151,10 +154,15 @@ const PurchaseInvoiceForm: React.FC<PurchaseInvoiceProps> = ({ invoiceToEdit, ha
 
     const endpoint = isEditMode ? `/api/purchases/${finalInvoice.id}` : '/api/purchases';
     const method = isEditMode ? 'PUT' : 'POST';
-
-    await addToSyncQueue({ endpoint, method, payload: finalInvoice });
-    await registerSync();
-    handleClose();
+    
+    try {
+        await addToSyncQueue({ endpoint, method, payload: finalInvoice });
+        await registerSync();
+        addToast('Purchase invoice saved. It will sync when online.', 'success');
+        handleClose();
+    } catch (error: any) {
+        addToast(error.message, 'error');
+    }
   };
 
   return (

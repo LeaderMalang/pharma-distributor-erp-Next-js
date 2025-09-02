@@ -1,14 +1,17 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Party, Product, InvoiceItem, Area, Task, PriceListItem, Order } from '../types';
 import { PARTIES_DATA, PRODUCTS, ICONS, CITIES, AREAS, EMPLOYEES, PRICE_LISTS, PRICE_LIST_ITEMS, BATCHES } from '../constants';
 import SearchableSelect from './SearchableSelect';
 import { addToSyncQueue, registerSync } from '../services/db';
+import { useToast } from '../contexts/ToastContext';
 
 const FormInput: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = (props) => (
     <input {...props} className="block w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-center" />
 );
 
 const POS: React.FC = () => {
+    const { addToast } = useToast();
     const [cart, setCart] = useState<InvoiceItem[]>([]);
     const [cityId, setCityId] = useState<number | null>(null);
     const [areaId, setAreaId] = useState<number | null>(null);
@@ -114,8 +117,8 @@ const POS: React.FC = () => {
     };
 
     const handleSave = async (isPaid: boolean) => {
-        if (cart.length === 0) { return alert("Cart is empty."); }
-        if (!customerId && paymentMethod === 'Credit') { return alert("Please select a customer for credit sales."); }
+        if (cart.length === 0) { return addToast("Cart is empty.", 'error'); }
+        if (!customerId && paymentMethod === 'Credit') { return addToast("Please select a customer for credit sales.", 'error'); }
 
         const saleData: Partial<Order> = {
             id: new Date().getTime().toString(),
@@ -131,9 +134,15 @@ const POS: React.FC = () => {
             qrCode: null, paymentMethod,
             paidAmount: isPaid ? grandTotal : paidAmount,
         };
-        await addToSyncQueue({ endpoint: '/api/pos', method: 'POST', payload: saleData });
-        await registerSync();
-        clearCart();
+
+        try {
+            await addToSyncQueue({ endpoint: '/api/pos', method: 'POST', payload: saleData });
+            await registerSync();
+            addToast('Sale saved. It will sync when online.', 'success');
+            clearCart();
+        } catch (error: any) {
+            addToast(error.message, 'error');
+        }
     };
     
     return (

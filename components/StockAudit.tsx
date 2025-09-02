@@ -1,11 +1,14 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { Product, Batch, StockMovement } from '../types';
 import { PRODUCTS, BATCHES as initialBatches, STOCK_MOVEMENTS as initialStockMovements, ICONS } from '../constants';
 import { SearchInput } from './SearchInput';
+import { useToast } from '../contexts/ToastContext';
 
 // Main Component
 const StockAudit: React.FC = () => {
+    const { addToast } = useToast();
     // Local state to simulate a database
     const [batches, setBatches] = useState<Batch[]>(initialBatches);
     const [stockMovements, setStockMovements] = useState<StockMovement[]>(initialStockMovements);
@@ -55,7 +58,7 @@ const StockAudit: React.FC = () => {
     
     const handleFinalizeClick = () => {
         if (auditSummary.length === 0) {
-            alert("No changes to sync. Please enter physical counts that differ from the system stock.");
+            addToast("No changes to sync. Enter counts that differ from system stock.", 'error');
             return;
         }
         setShowConfirmation(true);
@@ -90,7 +93,7 @@ const StockAudit: React.FC = () => {
         // Reset state after sync
         setShowConfirmation(false);
         setPhysicalCounts({});
-        alert(`Stock for ${selectedProduct.name} has been successfully updated.`);
+        addToast(`Stock for ${selectedProduct.name} has been successfully updated.`, 'success');
     };
 
     return (
