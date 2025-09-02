@@ -26,7 +26,7 @@ interface NavItemProps {
 
 const NavItem: React.FC<NavItemProps> = ({ icon, label, href, isSelected, onClick }) => {
   return (
-    <Link href={href} passHref>
+    <Link href={href} passHref legacyBehavior>
       <a
         onClick={onClick}
         className={`flex items-center w-full px-4 py-3 text-sm font-medium transition-colors duration-150 rounded-r-full mr-4 ${

@@ -1,14 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { Page, Order, EcommerceOrder, EcommerceOrderStatus, InvoiceItem } from '../types';
-import { ECOMMERCE_ORDERS, ICONS } from '../constants';
+import { ICONS } from '../constants';
 import { FilterBar, FilterControls } from './FilterBar';
 import { SearchInput } from './SearchInput';
-import { addToSyncQueue, registerSync } from '../services/db';
 
 interface EcommerceOrdersProps {
+  orders: EcommerceOrder[];
   setCurrentPage: (page: Page) => void;
   handleEditSaleInvoice: (invoice: Order) => void;
   viewOrderDetails: (order: EcommerceOrder) => void;
+  onStatusChange: (orderId: string, newStatus: EcommerceOrderStatus) => Promise<void>;
+  totalOrders: number;
+  currentPage: number;
+  rowsPerPage: number;
+  onPageChange: (page: number) => void;
+  isLoading: boolean;
 }
 
 const StatusBadge: React.FC<{ status: EcommerceOrderStatus }> = ({ status }) => {
@@ -22,17 +28,17 @@ const StatusBadge: React.FC<{ status: EcommerceOrderStatus }> = ({ status }) => 
     return <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClasses}`}>{status}</span>;
 };
 
-const EcommerceOrders: React.FC<EcommerceOrdersProps> = ({ setCurrentPage, handleEditSaleInvoice, viewOrderDetails }) => {
-    const [orders, setOrders] = useState<EcommerceOrder[]>(ECOMMERCE_ORDERS);
+const EcommerceOrders: React.FC<EcommerceOrdersProps> = ({ orders, setCurrentPage, handleEditSaleInvoice, viewOrderDetails, onStatusChange, totalOrders, currentPage, rowsPerPage, onPageChange, isLoading }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<EcommerceOrderStatus | 'All'>('All');
 
+    // Filtering is now client-side on the paginated data. For server-side filtering, these would be passed up.
     const filteredOrders = useMemo(() => {
         return orders.filter(order => {
             const searchLower = searchTerm.toLowerCase();
             const matchesSearch = searchTerm === '' ||
                 order.orderNo.toLowerCase().includes(searchLower) ||
-                order.customer?.name.toLowerCase().includes(searchLower);
+                (order.customer && order.customer.toLowerCase().includes(searchLower));
 
             const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
             return matchesSearch && matchesStatus;
@@ -40,19 +46,13 @@ const EcommerceOrders: React.FC<EcommerceOrdersProps> = ({ setCurrentPage, handl
     }, [orders, searchTerm, statusFilter]);
 
     const handleStatusChange = async (orderId: string, newStatus: EcommerceOrderStatus) => {
-        const payload = { status: newStatus };
-        await addToSyncQueue({ endpoint: `/api/ecommerce-orders/${orderId}`, method: 'PATCH', payload });
-        await registerSync();
-        
-        setOrders(prevOrders => prevOrders.map(order => 
-            order.id === orderId ? { ...order, status: newStatus } : order
-        ));
+        await onStatusChange(orderId, newStatus);
     };
 
     const handleConvertToSaleInvoice = (ecomOrder: EcommerceOrder) => {
         const saleInvoiceItems: InvoiceItem[] = ecomOrder.items.map(item => ({
             id: `si-${item.id}`,
-            productId: item.productId,
+            productId: null, // This will need mapping if product IDs are available
             batchId: null,
             quantity: item.quantity,
             bonus: 0,
@@ -68,11 +68,11 @@ const EcommerceOrders: React.FC<EcommerceOrdersProps> = ({ setCurrentPage, handl
             invoiceNo: '', // Will be generated in the form
             status: 'Draft',
             userId: ecomOrder.customerId,
-            customer: ecomOrder.customer || null,
-            cityId: ecomOrder.customer?.cityId || null,
-            areaId: ecomOrder.customer?.areaId || null,
-            supplyingManId: ecomOrder.salesmanId || null,
-            bookingManId: ecomOrder.salesmanId || null,
+            customer: null, // This would need to be fetched/found
+            cityId: null,
+            areaId: null,
+            supplyingManId: null, // This would need mapping
+            bookingManId: null,
             date: new Date().toISOString().split('T')[0],
             items: saleInvoiceItems,
             subTotal: ecomOrder.totalAmount,
@@ -87,6 +87,10 @@ const EcommerceOrders: React.FC<EcommerceOrdersProps> = ({ setCurrentPage, handl
 
         handleEditSaleInvoice(saleInvoiceToCreate);
     };
+    
+    const totalPages = Math.ceil(totalOrders / rowsPerPage);
+    const startRecord = totalOrders === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+    const endRecord = Math.min(currentPage * rowsPerPage, totalOrders);
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -108,12 +112,21 @@ const EcommerceOrders: React.FC<EcommerceOrdersProps> = ({ setCurrentPage, handl
                 </FilterControls.Select>
                 <FilterControls.ResetButton onClick={() => { setSearchTerm(''); setStatusFilter('All'); }} />
             </FilterBar>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto relative">
+                {isLoading && (
+                    <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 flex items-center justify-center z-10" aria-hidden="true">
+                        <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                )}
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Order #</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Salesman</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
@@ -124,7 +137,8 @@ const EcommerceOrders: React.FC<EcommerceOrdersProps> = ({ setCurrentPage, handl
                         {filteredOrders.map(order => (
                             <tr key={order.id}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{order.orderNo}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{order.customer?.name}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{order.customer}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{order.salesman}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{order.date}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">Rs. {order.totalAmount.toFixed(2)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={order.status} /></td>
@@ -144,10 +158,36 @@ const EcommerceOrders: React.FC<EcommerceOrdersProps> = ({ setCurrentPage, handl
                             </tr>
                         ))}
                          {filteredOrders.length === 0 && (
-                            <tr><td colSpan={6} className="text-center py-12 text-gray-500">No orders match your filters.</td></tr>
+                            <tr><td colSpan={7} className="text-center py-12 text-gray-500">No orders match your filters.</td></tr>
                         )}
                     </tbody>
                 </table>
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center text-sm gap-4">
+                <div>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Showing <span className="font-medium text-gray-800 dark:text-gray-200">{startRecord}</span> to <span className="font-medium text-gray-800 dark:text-gray-200">{endRecord}</span> of <span className="font-medium text-gray-800 dark:text-gray-200">{totalOrders}</span> results
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => onPageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                        Previous
+                    </button>
+                    <span className="text-gray-600 dark:text-gray-400">
+                        Page <span className="font-medium text-gray-800 dark:text-gray-200">{currentPage}</span> of <span className="font-medium text-gray-800 dark:text-gray-200">{totalPages}</span>
+                    </span>
+                    <button
+                        onClick={() => onPageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages}
+                        className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                        Next
+                    </button>
+                </div>
             </div>
         </div>
     );

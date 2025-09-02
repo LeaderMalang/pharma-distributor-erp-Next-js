@@ -6,9 +6,9 @@ const urlsToCache = [
   '/',
   '/manifest.json',
   '/favicon.svg',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/icons/maskable_icon.png'
+//   '/icons/icon-192x192.png',
+//   '/icons/icon-512x512.png',
+//   '/icons/maskable_icon.png'
 ];
 
 // --- Caching Strategy ---
@@ -23,39 +23,39 @@ self.addEventListener('install', event => {
   );
 });
 
-self.addEventListener('fetch', event => {
-    // We only want to cache GET requests.
-    if (event.request.method !== 'GET') {
-        return;
-    }
+// self.addEventListener('fetch', event => {
+//     // We only want to cache GET requests.
+//     if (event.request.method !== 'GET') {
+//         return;
+//     }
 
-    // Network first strategy for dynamic content, then cache fallback
-    event.respondWith(
-        fetch(event.request)
-            .then(response => {
-                // If the request is successful, cache it
-                if (response && response.status === 200) {
-                    const responseToCache = response.clone();
-                    caches.open(CACHE_NAME)
-                        .then(cache => {
-                            // Don't cache API calls or hot-update files
-                            if (event.request.url.includes('/api/') || event.request.url.includes('/_next/static/webpack/')) {
-                                return;
-                            }
-                            cache.put(event.request, responseToCache);
-                        });
-                }
-                return response;
-            })
-            .catch(() => {
-                // If the network request fails, try to serve from cache
-                return caches.match(event.request)
-                    .then(response => {
-                        return response || caches.match('/'); // Fallback to home page if specific asset isn't cached
-                    });
-            })
-    );
-});
+//     // Network first strategy for dynamic content, then cache fallback
+//     event.respondWith(
+//         fetch(event.request)
+//             .then(response => {
+//                 // If the request is successful, cache it
+//                 if (response && response.status === 200) {
+//                     const responseToCache = response.clone();
+//                     caches.open(CACHE_NAME)
+//                         .then(cache => {
+//                             // Don't cache API calls or hot-update files
+//                             if (event.request.url.includes('/api/') || event.request.url.includes('/_next/static/webpack/')) {
+//                                 return;
+//                             }
+//                             cache.put(event.request, responseToCache);
+//                         });
+//                 }
+//                 return response;
+//             })
+//             .catch(() => {
+//                 // If the network request fails, try to serve from cache
+//                 return caches.match(event.request)
+//                     .then(response => {
+//                         return response || caches.match('/'); // Fallback to home page if specific asset isn't cached
+//                     });
+//             })
+//     );
+// });
 
 
 self.addEventListener('activate', event => {

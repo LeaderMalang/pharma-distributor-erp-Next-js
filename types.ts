@@ -431,9 +431,10 @@ export type EcommerceOrderStatus = 'Pending' | 'Confirmed' | 'Cancelled' | 'Comp
 
 export interface EcommerceOrderItem {
   id: string; // temp client-side ID
-  productId: number | null;
+  product: string | null;
   quantity: number;
   rate: number;
+  bid_price:number;
   amount: number;
 }
 
@@ -442,8 +443,8 @@ export interface EcommerceOrder {
   orderNo: string;
   date: string;
   customerId: number;
-  customer?: Party | null; // Denormalized for display
-  salesmanId?: number | null;
+  customer?: string | null; // Denormalized for display
+  salesman?: string | null;
   status: EcommerceOrderStatus;
   totalAmount: number;
   paidAmount: number;
@@ -459,4 +460,50 @@ export interface SyncQueueItem {
     method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     payload: any;
     timestamp: number;
+}
+
+// API Response types for Ecommerce Orders
+export interface ApiProductSummary {
+    id: number;
+    name: string;
+}
+
+export interface ApiCustomerSummary {
+    id: number;
+    name: string;
+}
+
+export interface ApiSalesmanSummary {
+    id?: number;
+    name: string;
+}
+
+export interface ApiEcommerceOrderItem {
+    id: number;
+    product: ApiProductSummary;
+    quantity: number;
+    price: string;
+    bid_price: string;
+    amount: string;
+}
+
+export interface ApiEcommerceOrder {
+    id: number;
+    order_no: string;
+    date: string;
+    customer: ApiCustomerSummary;
+    salesman: ApiSalesmanSummary;
+    status: EcommerceOrderStatus;
+    total_amount: string;
+    paid_amount: string;
+    address: string;
+    items: ApiEcommerceOrderItem[];
+    saleInvoiceId?: string | null;
+}
+
+export interface PaginatedEcommerceOrders {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: ApiEcommerceOrder[];
 }

@@ -32,7 +32,11 @@ const EcommerceOrderDetail: React.FC<EcommerceOrderDetailProps> = ({ order, setC
                     </div>
                      <div>
                         <h4 className="text-sm text-gray-500 dark:text-gray-400">Customer</h4>
-                        <p className="font-semibold">{order.customer?.name}</p>
+                        <p className="font-semibold">{order.customer}</p>
+                    </div>
+                    <div>
+                        <h4 className="text-sm text-gray-500 dark:text-gray-400">Salesman</h4>
+                        <p className="font-semibold">{order.salesman}</p>
                     </div>
                      <div>
                         <h4 className="text-sm text-gray-500 dark:text-gray-400">Order Date</h4>
@@ -59,15 +63,18 @@ const EcommerceOrderDetail: React.FC<EcommerceOrderDetailProps> = ({ order, setC
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Product</th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Quantity</th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Rate</th>
+                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Bid Price</th>
+                                        
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-600">
                                     {order.items.map(item => (
                                         <tr key={item.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{getProductName(item.productId)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.product}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-300">{item.quantity}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-300">Rs. {item.rate.toFixed(2)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 dark:text-gray-300">Rs. {item.bid_price.toFixed(2)}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-800 dark:text-gray-200">Rs. {item.amount.toFixed(2)}</td>
                                         </tr>
                                     ))}
@@ -82,7 +89,7 @@ const EcommerceOrderDetail: React.FC<EcommerceOrderDetailProps> = ({ order, setC
                         <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
                         <div className="space-y-3 text-sm">
                              <div className="flex justify-between"><span className="text-gray-500">Status:</span><span className="font-semibold">{order.status}</span></div>
-                             <div className="flex justify-between"><span className="text-gray-500">Salesman:</span><span className="font-semibold">{getSalesmanName(order.salesmanId)}</span></div>
+                             <div className="flex justify-between"><span className="text-gray-500">Salesman:</span><span className="font-semibold">{order.salesman}</span></div>
                              <div className="flex justify-between border-t dark:border-gray-700 pt-2 mt-2"><span className="font-bold">Total Amount:</span><span className="font-bold">Rs. {order.totalAmount.toFixed(2)}</span></div>
                              <div className="flex justify-between"><span className="text-gray-500">Paid Amount:</span><span className="font-semibold text-green-600">Rs. {order.paidAmount.toFixed(2)}</span></div>
                              {order.saleInvoiceId && <div className="flex justify-between"><span className="text-gray-500">Sale Invoice:</span><span className="font-semibold">{order.saleInvoiceId}</span></div>}
