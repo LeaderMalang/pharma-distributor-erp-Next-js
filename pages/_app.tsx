@@ -1,16 +1,24 @@
-
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import Layout from '../components/Layout';
-import { useRouter } from 'next/router';
+import { NextRouter } from 'next/router';
 import { useEffect } from 'react';
 
-function AppContent({ Component, pageProps }: AppProps) {
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
+// FIX: This interface is redundant and seems to cause a type error.
+// AppProps already contains all the necessary properties.
+/*
+interface AppContentProps extends AppProps {
+  router: NextRouter;
+}
+*/
 
-  const isPublicPage = ['/'].includes(router.pathname); // or /login, /register
+// FIX: Using AppProps directly as the type for the destructured props.
+function AppContent({ Component, pageProps, router }: AppProps) {
+  const { user, isLoading } = useAuth();
+
+  const publicPages = ['/', '/login', '/register'];
+  const isPublicPage = publicPages.includes(router.pathname);
 
   useEffect(() => {
     if (!isLoading && !user && !isPublicPage) {
@@ -19,15 +27,15 @@ function AppContent({ Component, pageProps }: AppProps) {
   }, [isLoading, user, isPublicPage, router]);
 
   if (isLoading) {
-    return <div>Loading...</div>; // Replace with a proper loading spinner/component
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
-
-  if (!user && !isPublicPage) {
-     return <div>Redirecting...</div>; // Or a loading spinner
-  }
-
-  if (!user && isPublicPage) {
+  
+  if (isPublicPage) {
     return <Component {...pageProps} />;
+  }
+
+  if (!user) {
+    return <div className="flex h-screen items-center justify-center">Redirecting to login...</div>;
   }
 
   return (
@@ -38,10 +46,10 @@ function AppContent({ Component, pageProps }: AppProps) {
 }
 
 
-export default function MyApp({ Component, pageProps }: AppProps) {
+export default function MyApp(props: AppProps) {
   return (
     <AuthProvider>
-      <AppContent Component={Component} pageProps={pageProps} />
+      <AppContent {...props} />
     </AuthProvider>
   );
 }

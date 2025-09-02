@@ -1,13 +1,13 @@
 import React from 'react';
 import { User, Page } from '../types';
 import { ICONS } from '../constants';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
   setSidebarOpen: (isOpen: boolean) => void;
   currentUser: User | null;
-  currentPage?: Page;
-  setCurrentPage?: (page: Page) => void;
 }
 
 const NavHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -19,36 +19,33 @@ const NavHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 interface NavItemProps {
   icon: React.ReactNode;
   label: string;
-  page: Page;
+  href: string;
   isSelected: boolean;
-  onClick: (page: Page) => void;
+  onClick: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, page, isSelected, onClick }) => {
+const NavItem: React.FC<NavItemProps> = ({ icon, label, href, isSelected, onClick }) => {
   return (
-    <a
-      href="#"
-      onClick={(e) => {
-        e.preventDefault();
-        onClick(page);
-      }}
-      className={`flex items-center w-full px-4 py-3 text-sm font-medium transition-colors duration-150 rounded-r-full mr-4 ${
-        isSelected
-          ? 'text-white bg-blue-600'
-          : 'text-gray-400 hover:text-white hover:bg-gray-700'
-      }`}
-    >
-      <span className="mr-4">{icon}</span>
-      <span className="w-full text-left">{label}</span>
-    </a>
+    <Link href={href} passHref>
+      <a
+        onClick={onClick}
+        className={`flex items-center w-full px-4 py-3 text-sm font-medium transition-colors duration-150 rounded-r-full mr-4 ${
+          isSelected
+            ? 'text-white bg-blue-600'
+            : 'text-gray-400 hover:text-white hover:bg-gray-700'
+        }`}
+      >
+        <span className="mr-4">{icon}</span>
+        <span className="w-full text-left">{label}</span>
+      </a>
+    </Link>
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen, currentUser, currentPage, setCurrentPage }) => {
-  const handleNavClick = (page: Page) => {
-    if (setCurrentPage) {
-        setCurrentPage(page);
-    }
+const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen, currentUser }) => {
+  const router = useRouter();
+
+  const handleNavClick = () => {
     // Close sidebar on navigation in mobile view
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
@@ -62,9 +59,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen, curren
     const navItem = (label: string, page: Page, icon: React.ReactNode) => (
       <NavItem
         label={label}
-        page={page}
+        href={`/${page}`}
         icon={icon}
-        isSelected={currentPage === page}
+        isSelected={router.pathname === `/${page}`}
         onClick={handleNavClick}
       />
     );
@@ -124,7 +121,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen, curren
             {navItem('Place New Order', 'new-sale-invoice', ICONS.plus)}
           </>
         );
-      // ... Add other roles here following the same pattern
       default:
         return null;
     }
@@ -132,7 +128,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen, curren
 
   return (
     <>
-      {/* Mobile-only overlay */}
       {isSidebarOpen && (
         <div 
           onClick={() => setSidebarOpen(false)} 

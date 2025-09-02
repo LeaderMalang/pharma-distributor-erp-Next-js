@@ -24,8 +24,8 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
-    // We only want to cache GET requests for http/https.
-    if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+    // We only want to cache GET requests.
+    if (event.request.method !== 'GET') {
         return;
     }
 
@@ -86,7 +86,7 @@ function openDBSW() {
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve(request.result);
         request.onupgradeneeded = (event) => {
-            const db = (event.target as IDBOpenDBRequest).result;
+            const db = event.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME_SW)) {
                 db.createObjectStore(STORE_NAME_SW, { keyPath: 'id', autoIncrement: true });
             }
@@ -96,10 +96,10 @@ function openDBSW() {
 
 async function syncData() {
     console.log('Service Worker: Sync event triggered');
-    const db = await openDBSW() as IDBDatabase;
+    const db = await openDBSW();
     const transaction = db.transaction(STORE_NAME_SW, 'readwrite');
     const store = transaction.objectStore(STORE_NAME_SW);
-    const queuedItems = await new Promise<any[]>((resolve, reject) => {
+    const queuedItems = await new Promise((resolve, reject) => {
         const req = store.getAll();
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
@@ -123,7 +123,7 @@ async function syncData() {
             if (response.ok) {
                 console.log(`Service Worker: Successfully synced item ${item.id}`);
                 const deleteTx = db.transaction(STORE_NAME_SW, 'readwrite');
-                await new Promise<void>((resolve, reject) => {
+                await new Promise((resolve, reject) => {
                     const req = deleteTx.objectStore(STORE_NAME_SW).delete(item.id);
                     req.onsuccess = () => resolve();
                     req.onerror = () => reject(req.error);
@@ -139,7 +139,7 @@ async function syncData() {
     console.log('Service Worker: Sync completed.');
 }
 
-self.addEventListener('sync', (event: any) => {
+self.addEventListener('sync', (event) => {
     if (event.tag === 'sync-forms') {
         event.waitUntil(syncData());
     }

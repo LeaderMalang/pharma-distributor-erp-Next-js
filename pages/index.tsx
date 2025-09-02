@@ -14,8 +14,8 @@ export default function HomePage() {
   }, [user, isLoading, router]);
 
   if (isLoading || user) {
-    return <div>Loading...</div>; // Or a splash screen
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
   
-  return <Login />;
+  return <Login setCurrentPage={(page) => router.push(`/${page}`)} />;
 }

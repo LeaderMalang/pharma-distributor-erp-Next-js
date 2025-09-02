@@ -18,7 +18,7 @@ const ReportsPage: React.FC = () => {
                 body: JSON.stringify({
                     salesByCategory: SALES_BY_CATEGORY,
                     expenseBreakdown: EXPENSE_BREAKDOWN,
-                })
+                }),
             });
 
             if (!response.ok) {
@@ -61,7 +61,7 @@ const ReportsPage: React.FC = () => {
                     {analysis && (
                          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-md prose prose-sm dark:prose-invert max-w-none">
                             <h4 className="font-bold text-lg">AI Analysis</h4>
-                            {analysis.split('\\n').map((line, index) => {
+                            {analysis.split('\n').map((line, index) => {
                                 if (line.startsWith('* ')) {
                                     return <li key={index} className="ml-4">{line.substring(2)}</li>;
                                 }
@@ -85,9 +85,9 @@ const ReportsPage: React.FC = () => {
                             <YAxis stroke="#9ca3af" />
                             <Tooltip
                                 contentStyle={{
-                                    backgroundColor: 'rgba(31, 41, 55, 0.8)', // gray-800 with opacity
-                                    borderColor: '#4b5563', // gray-600
-                                    color: '#f3f4f6' // gray-100
+                                    backgroundColor: 'rgba(31, 41, 55, 0.8)',
+                                    borderColor: '#4b5563',
+                                    color: '#f3f4f6'
                                 }}
                             />
                             <Legend />
